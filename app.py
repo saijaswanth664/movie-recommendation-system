@@ -11,15 +11,21 @@ ratings = pd.read_csv("dataset/ratings.csv")
 # Create user-movie matrix
 movie_matrix = ratings.pivot_table(index='userId', columns='movieId', values='rating')
 
-# Fill missing values
 movie_matrix = movie_matrix.fillna(0)
 
-# Calculate similarity
+# Similarity
 movie_similarity = cosine_similarity(movie_matrix.T)
 
-similarity_df = pd.DataFrame(movie_similarity,
-                             index=movie_matrix.columns,
-                             columns=movie_matrix.columns)
+similarity_df = pd.DataFrame(
+    movie_similarity,
+    index=movie_matrix.columns,
+    columns=movie_matrix.columns
+)
+
+# Trending movies (most rated)
+trending = ratings.groupby("movieId").size().sort_values(ascending=False).head(8)
+
+trending_movies = movies[movies["movieId"].isin(trending.index)]["title"].tolist()
 
 
 def recommend_movies(movie_title):
@@ -51,7 +57,11 @@ def home():
 
         recommendations = recommend_movies(movie_name)
 
-    return render_template("index.html", recommendations=recommendations)
+    return render_template(
+        "index.html",
+        recommendations=recommendations,
+        trending=trending_movies
+    )
 
 
 @app.route("/search")
