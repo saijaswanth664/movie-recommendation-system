@@ -17,9 +17,11 @@
 
 <form method="POST">
 
-<input class="form-control mb-3" type="text" name="movie" placeholder="Enter movie name (Example: Toy Story (1995))" required>
+<input class="form-control mb-3" id="movieInput" type="text" name="movie" placeholder="Enter movie name" autocomplete="off">
 
-<button class="btn btn-warning">Recommend</button>
+<ul class="list-group" id="suggestions"></ul>
+
+<button class="btn btn-warning mt-3">Recommend</button>
 
 </form>
 
@@ -55,19 +57,39 @@
 
 <script>
 
-const input = document.querySelector("input[name='movie']")
+const input = document.getElementById("movieInput")
+const suggestionBox = document.getElementById("suggestions")
 
 input.addEventListener("input", async () => {
 
 let query = input.value
 
-if(query.length < 2) return
+if(query.length < 2){
+suggestionBox.innerHTML=""
+return
+}
 
 let res = await fetch(`/search?q=${query}`)
-
 let data = await res.json()
 
-console.log(data.movies)
+suggestionBox.innerHTML=""
+
+data.movies.forEach(movie => {
+
+let item=document.createElement("li")
+
+item.classList.add("list-group-item","list-group-item-action")
+
+item.textContent=movie
+
+item.onclick=()=>{
+input.value=movie
+suggestionBox.innerHTML=""
+}
+
+suggestionBox.appendChild(item)
+
+})
 
 })
 
