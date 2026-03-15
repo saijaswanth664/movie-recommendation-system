@@ -52,6 +52,27 @@
 
 </div>
 
+
+<script>
+
+const input = document.querySelector("input[name='movie']")
+
+input.addEventListener("input", async () => {
+
+let query = input.value
+
+if(query.length < 2) return
+
+let res = await fetch(`/search?q=${query}`)
+
+let data = await res.json()
+
+console.log(data.movies)
+
+})
+
+</script>
+
 </body>
 
 </html>
