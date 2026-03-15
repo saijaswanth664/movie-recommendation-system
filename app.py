@@ -4,16 +4,21 @@ from sklearn.metrics.pairwise import cosine_similarity
 
 app = Flask(__name__)
 
-# Load dataset
+# Load datasets
 movies = pd.read_csv("dataset/movies.csv")
 ratings = pd.read_csv("dataset/ratings.csv")
 
+# Calculate average rating
+avg_ratings = ratings.groupby("movieId")["rating"].mean().reset_index()
+avg_ratings.columns = ["movieId", "avg_rating"]
+
+movies = pd.merge(movies, avg_ratings, on="movieId")
+
 # Create user-movie matrix
 movie_matrix = ratings.pivot_table(index='userId', columns='movieId', values='rating')
-
 movie_matrix = movie_matrix.fillna(0)
 
-# Similarity
+# Similarity calculation
 movie_similarity = cosine_similarity(movie_matrix.T)
 
 similarity_df = pd.DataFrame(
@@ -23,9 +28,8 @@ similarity_df = pd.DataFrame(
 )
 
 # Trending movies (most rated)
-trending = ratings.groupby("movieId").size().sort_values(ascending=False).head(8)
-
-trending_movies = movies[movies["movieId"].isin(trending.index)]["title"].tolist()
+trending_ids = ratings.groupby("movieId").size().sort_values(ascending=False).head(8).index
+trending_movies = movies[movies["movieId"].isin(trending_ids)][["title","avg_rating"]].to_dict("records")
 
 
 def recommend_movies(movie_title):
@@ -41,9 +45,9 @@ def recommend_movies(movie_title):
 
     recommended_ids = similar_scores.iloc[1:6].index
 
-    recommendations = movies[movies['movieId'].isin(recommended_ids)]['title']
+    recommendations = movies[movies['movieId'].isin(recommended_ids)][["title","avg_rating"]]
 
-    return recommendations.tolist()
+    return recommendations.to_dict("records")
 
 
 @app.route("/", methods=["GET", "POST"])
@@ -52,9 +56,7 @@ def home():
     recommendations = []
 
     if request.method == "POST":
-
         movie_name = request.form["movie"]
-
         recommendations = recommend_movies(movie_name)
 
     return render_template(
